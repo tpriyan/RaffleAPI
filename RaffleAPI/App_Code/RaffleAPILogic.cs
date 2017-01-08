@@ -346,6 +346,9 @@ namespace Bala.Raffle
         {
             //string drawQuery = "select top 1 name from LotContestents where ObjectGuid = '" + objectGuid + "' and LotDrawNumber = '" + rdr["ActiveDrawNumber"].ToString() + "' ORDER BY NEWID()";
             string lotNumberSelectQuery = "select * from LotObjectsInWorld where ObjectGuid = '" + objectGuid + "'";
+            string winnerUpdateSql = "";
+            string lotNumber = "";
+            string winner = "";
 
             using (System.Data.SQLite.SQLiteConnection con = new System.Data.SQLite.SQLiteConnection("data source=" + HttpContext.Current.Server.MapPath("~/App_Data/Raffle.db")))
             {
@@ -360,18 +363,28 @@ namespace Bala.Raffle
                         if (reader.Read())
                         {
                             string drawQuery = "select name from LotContestents where ObjectGuid = '" + objectGuid + "' and LotDrawNumber = '" + reader["LotDrawNumber"].ToString() + "' ORDER BY RANDOM() LIMIT 1";
+                            lotNumber = reader["LotDrawNumber"].ToString();
                             reader.Close();
                             com.CommandText = drawQuery;
                             using (System.Data.SQLite.SQLiteDataReader reader1 = com.ExecuteReader())
                             {
                                 if (reader1.Read())
                                 {
-                                    pageResponse.Write(reader1[0].ToString());
+                                    winnerUpdateSql = "update LotDrawHistory set Winner = '" + reader1[0].ToString() + "' where ObjectGuid = '" + objectGuid + "' and LotDrawNumber = '" + lotNumber + "'";
+                                    winner = reader1[0].ToString();
+                                    reader1.Close();
+                                    com.CommandText = winnerUpdateSql;
+                                    com.ExecuteNonQuery();
+                                    pageResponse.Write(winner.Replace("$", " "));
                                     pageResponse.Flush();
                                     pageResponse.SuppressContent = true;
                                 }
                                 else
                                 {
+                                    winnerUpdateSql = "update LotDrawHistory set Winner = '$$$' where ObjectGuid = '" + objectGuid + "' and LotDrawNumber = '" + lotNumber + "'";
+                                    reader1.Close();
+                                    com.CommandText = winnerUpdateSql;
+                                    com.ExecuteNonQuery();
                                     pageResponse.Write("$$$"); // code for no winners
                                     pageResponse.Flush();
                                     pageResponse.SuppressContent = true;

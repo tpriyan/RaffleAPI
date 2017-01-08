@@ -27,8 +27,36 @@ string x;
 integer  gListener;
 integer Durationchannel = -13572468;
 
+string avatarNameEncoded;
+
+ string str_replace(string src, string from, string to)
+    {//replaces all occurrences of 'from' with 'to' in 'src'.
+        integer len = (~-(llStringLength(from)));
+        if(~len)
+        {
+            string  buffer = src;
+            integer b_pos = ERR_GENERIC;
+            integer to_len = (~-(llStringLength(to)));
+            @loop;//instead of a while loop, saves 5 bytes (and runs faster).
+            integer to_pos = ~llSubStringIndex(buffer, from);
+            if(to_pos)
+            {
+    //            b_pos -= to_pos;
+    //            src = llInsertString(llDeleteSubString(src, b_pos, b_pos + len), b_pos, to);
+    //            b_pos += to_len;
+    //            buffer = llGetSubString(src, (-~(b_pos)), 0x8000);
+                buffer = llGetSubString(src = llInsertString(llDeleteSubString(src, b_pos -= to_pos, b_pos + len), b_pos, to), (-~(b_pos += to_len)), 0x8000);
+                jump loop;
+            }
+        }
+        return src;
+    }
+
 default
 {
+    
+   
+    
     state_entry()
     {
         
@@ -80,8 +108,10 @@ default
             }
             else if(message == "Enroll")
             {
-                requestId_enroll = llHTTPRequest("http://desihomes.zapto.org:8080/raffleapi.aspx?action=add&&objectguid=" + (string)  llGetKey() + "&name=" + avatarName, [], "");
-              //  llSay(0, "http://desihomes.zapto.org:8080/raffleapi.aspx?action=add&&objectguid=" + (string)  llGetKey() + "&name=" + avatarName);
+                avatarNameEncoded = str_replace(avatarName, " ", "$");
+              //  llSay(0,avatarNameEncoded);
+                requestId_enroll = llHTTPRequest("http://desihomes.zapto.org:8080/raffleapi.aspx?action=add&&objectguid=" + (string)  llGetKey() + "&name=" + avatarNameEncoded, [], "");
+               // llSay(0, "http://desihomes.zapto.org:8080/raffleapi.aspx?action=add&&objectguid=" + (string)  llGetKey() + "&name=" + avatarNameEncoded);
             }
             else if(message == "Status")
             {
@@ -200,6 +230,8 @@ default
             listenId = llListen(channelDialog, "", toucherID, "");
         }
     }
+    
+    
 
 }
 
