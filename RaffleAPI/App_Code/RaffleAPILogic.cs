@@ -21,43 +21,7 @@ namespace Bala.Raffle
             parameters = _parameters;
             pageResponse = _pageResponse;
         }
-        /*System.Data.SQLite.SQLiteConnection.CreateFile("databaseFile.db3");        // Create the file which will be hosting our database
-    using (System.Data.SQLite.SQLiteConnection con = new System.Data.SQLite.SQLiteConnection("data source=databaseFile.db3"))
-    {
-        using (System.Data.SQLite.SQLiteCommand com = new System.Data.SQLite.SQLiteCommand(con))
-        {
-            con.Open();                             // Open the connection to the database
-
-            com.CommandText = createTableQuery;     // Set CommandText to our query that will create the table
-            com.ExecuteNonQuery();                  // Execute the query
-
-            com.CommandText = "INSERT INTO MyTable (Key,Value) Values ('key one','value one')";     // Add the first entry into our database 
-            com.ExecuteNonQuery();      // Execute the query
-            com.CommandText = "INSERT INTO MyTable (Key,Value) Values ('key two','value value')";   // Add another entry into our database 
-            com.ExecuteNonQuery();      // Execute the query
-
-            com.CommandText = "Select * FROM MyTable";      // Select all rows from our database table
-
-            using (System.Data.SQLite.SQLiteDataReader reader = com.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    Console.WriteLine(reader["Key"] + " : " + reader["Value"]);     // Display the value of the key and value column for every row
-                }
-            }
-            con.Close();        // Close the connection to the database
-        }
-    }
-    */
-        private void InitConnection()
-        {
-            /*string connectionString = ConfigurationManager.ConnectionStrings["LotPickerConnectionString"].ConnectionString;
-
-            conn = new SqlConnection(connectionString);
-
-            conn.Open();*/
-        }
-
+        
         public void HandlePageLoad()
         {
             try
@@ -107,20 +71,6 @@ namespace Bala.Raffle
                         this.closeRaffle();
                     }
                 }
-                /*
-
-
-
-
-
-                    conn.Close();
-                }
-                else
-                {
-                    Response.Write("Parameters invalid");
-                }
-            }
-            */
             }
             catch (Exception ex)
             {
@@ -302,9 +252,6 @@ namespace Bala.Raffle
                     con.Close();
                 }
             }
-
-
-
             return true;
         }
 
@@ -352,9 +299,6 @@ namespace Bala.Raffle
                             }
                         }
                     }
-
-
-
                 }
 
                 con.Close();
@@ -379,7 +323,6 @@ namespace Bala.Raffle
                     {
                         if (reader.Read())
                         {
-                            //SELECT* FROM table ORDER BY RANDOM() LIMIT 1;
                             string drawQuery = "select name from LotContestents where ObjectGuid = '" + objectGuid + "' and LotDrawNumber = '" + reader["LotDrawNumber"].ToString() + "' ORDER BY RANDOM() LIMIT 1";
                             reader.Close();
                             com.CommandText = drawQuery;
@@ -410,7 +353,6 @@ namespace Bala.Raffle
 
         private void closeRaffle(Boolean dontEmitMessages = false)
         {
-            //string drawQuery = "select top 1 name from LotContestents where ObjectGuid = '" + objectGuid + "' and LotDrawNumber = '" + rdr["ActiveDrawNumber"].ToString() + "' ORDER BY NEWID()";
             string lotNumberSelectQuery = "update LotObjectsInWorld set LotDrawNumber = 0 where ObjectGuid = '" + objectGuid + "'";
 
             using (System.Data.SQLite.SQLiteConnection con = new System.Data.SQLite.SQLiteConnection("data source=" + HttpContext.Current.Server.MapPath("~/App_Data/Raffle.db")))
@@ -435,5 +377,4 @@ namespace Bala.Raffle
             }
         }
     }
-        
 }
