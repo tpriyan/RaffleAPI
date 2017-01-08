@@ -15,13 +15,18 @@ namespace Bala.Raffle
         HttpResponse pageResponse;
         Guid objectGuid;
         string name;
+        int durationInMinutes;
+        enum RaffleStatus
+        {
+            Active, InActive, ActiveClosed, Unregistered
+        }
 
         public RaffleAPILogic(System.Collections.Specialized.NameValueCollection _parameters, HttpResponse _pageResponse)
         {
             parameters = _parameters;
             pageResponse = _pageResponse;
         }
-        
+
         public void HandlePageLoad()
         {
             try
@@ -49,6 +54,7 @@ namespace Bala.Raffle
 
                     else if (parameters["action"].ToString() == "startnewdraw")
                     {
+                        durationInMinutes = Int32.Parse(parameters["duration"].ToString());
                         this.startNewDraw();
                     }
                     else if (parameters["action"].ToString() == "add")
@@ -115,8 +121,9 @@ namespace Bala.Raffle
             return true;
         }
 
-        private Boolean isActive()
+        private RaffleStatus isActive()
         {
+            RaffleStatus status = RaffleStatus.Active;
             string sqlQueryRead = "select * from LotObjectsInWorld where ObjectGuid = '" + objectGuid + "'";
             Boolean objectRegistered = false;
 
@@ -133,13 +140,38 @@ namespace Bala.Raffle
                         while (reader.Read())
                         {
                             objectRegistered = true;
-                            if (reader[1] != System.DBNull.Value && reader[1].ToString() != string.Empty && Int32.Parse(reader[1].ToString()) != 0)
+                            if (reader["LotDrawNumber"] != System.DBNull.Value && reader["LotDrawNumber"].ToString() != string.Empty && Int32.Parse(reader["LotDrawNumber"].ToString()) != 0)
                             {
-                                pageResponse.Write("ACTIVE");
-                                pageResponse.Flush();
-                                pageResponse.SuppressContent = true;
-                                con.Close();
-                                return true;
+                                string sqlReadDuration = "select * from LotDrawHistory where ObjectGuid = '" + objectGuid + "' and LotDrawNumber = '" + reader["LotDrawNumber"].ToString() + "'";
+                                reader.Close();
+
+                                com.CommandText = sqlReadDuration;
+                                using (System.Data.SQLite.SQLiteDataReader reader1 = com.ExecuteReader())
+                                {
+
+                                    if (reader1.Read())
+                                    {
+                                        // check for duration here
+                                        int duration = Int32.Parse(reader1["Duration"].ToString());
+                                        DateTime LotStartDateTime = DateTime.Parse(reader1["LotStartDateTime"].ToString());
+
+                                        if (duration != -1 && DateTime.Now > LotStartDateTime.AddMinutes(duration) )
+                                        {
+                                            pageResponse.Write("ACTIVEBUTCLOSED");
+                                            status = RaffleStatus.ActiveClosed;
+                                        }
+                                        else
+                                        {
+                                            pageResponse.Write("ACTIVE");
+                                            status = RaffleStatus.Active;
+                                        }
+
+                                        pageResponse.Flush();
+                                        pageResponse.SuppressContent = true;
+                                        con.Close();
+                                        return status;
+                                    }
+                                }
                             }
                             else
                             {
@@ -147,23 +179,26 @@ namespace Bala.Raffle
                                 pageResponse.Flush();
                                 pageResponse.SuppressContent = true;
                                 con.Close();
-                                return false;
+                                return RaffleStatus.InActive;
                             }
-
                         }
+
+
+
                     }
-                    if (!objectRegistered)
-                    {
-                        pageResponse.Write("UNREGISTERED");
-                        pageResponse.Flush();
-                        pageResponse.SuppressContent = true;
-                        con.Close();
-                        return false;
-                    }
+                }
+                if (!objectRegistered)
+                {
+                    pageResponse.Write("UNREGISTERED");
+                    pageResponse.Flush();
+                    pageResponse.SuppressContent = true;
+                    con.Close();
+                    return RaffleStatus.Unregistered;
                 }
             }
 
-            return false;
+
+            return RaffleStatus.InActive;
         }
 
         private Boolean startNewDraw()
@@ -191,7 +226,8 @@ namespace Bala.Raffle
                     }
                     drawNumber++;
 
-                    string addNewRaffle = "insert into LotDrawHistory(ObjectGuid, LotDrawNumber)values('" + objectGuid + "', " + drawNumber + ")";
+                    string addNewRaffle = "insert into LotDrawHistory(ObjectGuid, LotDrawNumber, Duration, LotStartDateTime)values('" + objectGuid + "', " + drawNumber + ", "
+                        + durationInMinutes + ", '" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
                     com.CommandText = addNewRaffle;
                     com.ExecuteNonQuery();
 
